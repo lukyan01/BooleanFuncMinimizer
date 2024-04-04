@@ -3,7 +3,9 @@ project(BooleanFuncMinimizer)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(BooleanFuncMinimizer src/main.cpp
+add_executable(BooleanFuncMinimizer
+        src/main.cpp
         src/BooleanMinimizer.cpp
-        "src/strategies/QuineMcCluskeyStrategy.cpp"
-        "src/strategies/QuineMcCluskeyStrategy.h")
+        src/strategies/QuineMcCluskeyStrategy.cpp
+        # add other .cpp files as needed
+)
