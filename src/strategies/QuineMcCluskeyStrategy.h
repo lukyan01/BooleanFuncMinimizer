@@ -6,13 +6,17 @@
 #define BOOLEANFUNCMINIMIZER_QUINEMCCLUSKEYSTRATEGY_H
 
 #include "MinimizationStrategy.h"
+#include "third-party/minbool.h"
 #include <vector>
 
-// Concrete class implementing MinimizationStrategy for the Quine-McCluskey algorithm
+
 class QuineMcCluskeyStrategy : public MinimizationStrategy {
 public:
     // Overrides the minimize function in the MinimizationStrategy interface
-    void minimize(const std::vector<int>& minterms) override;
+    void minimize(const std::vector<int>& on, const std::vector<int>& dc, int minLength) override;
+private:
+    template <typename IntTypeN>
+    void minimize_template(const std::vector<int>& minterms_on, const std::vector<int>& minterms_dc);
 };
 
 
