@@ -12,9 +12,9 @@ void BooleanMinimizer::setStrategy(std::unique_ptr<MinimizationStrategy> newStra
     strategy = std::move(newStrategy);
 }
 
-void BooleanMinimizer::minimizeFunction(const std::vector<int> &minterms) {
+void BooleanMinimizer::minimizeFunction(const std::vector<int>& on, const std::vector<int>& dc, int minLength) {
     if (strategy) {
-        strategy->minimize(minterms);
+        strategy->minimize(on, dc, minLength);
     } else {
         throw std::logic_error("Minimization strategy not set.");
     }

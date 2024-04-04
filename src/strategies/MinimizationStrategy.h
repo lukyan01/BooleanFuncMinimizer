@@ -14,7 +14,7 @@ public:
 
     // Pure virtual function to be implemented by concrete strategies
     // Takes a list of minterms as input and performs minimization
-    virtual void minimize(const std::vector<int>& minterms) = 0;
+    virtual void minimize(const std::vector<int>& on, const std::vector<int>& dc, int minLength) = 0;
 };
 
 
