@@ -3,6 +3,7 @@ project(BooleanFuncMinimizer)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# Create the C++ executable
 add_executable(BooleanFuncMinimizer
         src/main.cpp
         src/BooleanMinimizer.cpp

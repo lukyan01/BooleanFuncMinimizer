@@ -14,7 +14,7 @@ class BooleanMinimizer {
 public:
     explicit BooleanMinimizer(std::unique_ptr<MinimizationStrategy> strategy = nullptr);
     void setStrategy(std::unique_ptr<MinimizationStrategy> strategy);
-    void minimizeFunction(const std::vector<int>& on, const std::vector<int>& dc, int minLength);
+    std::vector<std::string> minimizeFunction(const std::vector<int>& on, const std::vector<int>& dc, int minLength);
 
 private:
     std::unique_ptr<MinimizationStrategy> strategy;

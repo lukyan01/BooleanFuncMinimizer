@@ -9,49 +9,31 @@
 #include <algorithm>
 #include <cassert>
 #include <ostream>
-#include <iostream>
 #include <numeric>
 
 namespace minbool {
 
-    inline size_t popcount(uint8_t n) { return std::bitset<8>(n).count(); }
-
+    inline size_t popcount(uint8_t  n) { return std::bitset<8>(n).count();  }
     inline size_t popcount(uint16_t n) { return std::bitset<16>(n).count(); }
-
     inline size_t popcount(uint32_t n) { return std::bitset<32>(n).count(); }
-
     inline size_t popcount(uint64_t n) { return std::bitset<64>(n).count(); }
 
-    template<size_t Nbits>
-    struct IntType {
-    };
-    template<>
-    struct IntType<8> {
-        using Type = uint8_t;
-    };
-    template<>
-    struct IntType<16> {
-        using Type = uint16_t;
-    };
-    template<>
-    struct IntType<32> {
-        using Type = uint32_t;
-    };
-    template<>
-    struct IntType<64> {
-        using Type = uint64_t;
-    };
+    template <size_t Nbits> struct IntType {};
+    template <> struct IntType<8>  { using Type = uint8_t;  };
+    template <> struct IntType<16> { using Type = uint16_t; };
+    template <> struct IntType<32> { using Type = uint32_t; };
+    template <> struct IntType<64> { using Type = uint64_t; };
 
     constexpr size_t compute_int_size(size_t Nbits) {
         return Nbits <= 8 ? 8 : 2 * compute_int_size(Nbits / 2);
     }
 
-    template<size_t Nbits>
+    template <size_t Nbits>
     struct MinTerm {
         using IntTypeN = typename IntType<compute_int_size(Nbits)>::Type;
 
         struct Hash {
-            size_t operator()(const MinTerm &term) const {
+            size_t operator () (const MinTerm& term) const {
                 // Bernstein's hash function
                 return 33 * term.value ^ term.dash;
             }
@@ -59,46 +41,32 @@ namespace minbool {
 
         enum Value {
             Zero = 0,
-            One = 1,
+            One  = 1,
             Dash = 2
         };
 
         MinTerm(IntTypeN value = 0, IntTypeN dash = 0)
-                : value(value), dash(dash) {
+                : value(value), dash(dash)
+        {
             assert((value & ~((1 << Nbits) - 1)) == 0);
-            assert((dash & ~((1 << Nbits) - 1)) == 0);
+            assert((dash  & ~((1 << Nbits) - 1)) == 0);
         }
 
-        Value operator[](size_t i) const {
+        Value operator [] (size_t i) const {
             assert(i < Nbits);
             return (dash >> i) & 1 ? Dash : Value((value >> i) & 1);
         }
 
-        [[nodiscard]] size_t count_literals() const {
+        size_t count_literals() const {
             return Nbits - popcount(dash);
         }
 
-        MinTerm combine(const MinTerm &other) const {
+        MinTerm combine(const MinTerm& other) const {
             IntTypeN mask = (value ^ other.value) | (dash ^ other.dash);
             return MinTerm(value & ~mask, dash | mask);
         }
 
-        [[nodiscard]] std::string to_string() const {
-            std::string term_str;
-            for (size_t i = 0, j = 3; i < Nbits - 3; ++i) {
-                if ((*this)[i] == One) {
-                    term_str += (char) ('A' + j);
-                } else if ((*this)[i] == Zero) {
-                    term_str += (char) ('A' + j);
-                    term_str += '\'';
-                }
-                j--;
-                std::cout << "Term Str: " << term_str << std::endl;
-            }
-            return term_str;
-        }
-
-        template<typename F>
+        template <typename F>
         void foreach_value(F f, size_t bit = 0, IntTypeN cur = 0) const {
             if (bit == Nbits) {
                 f(cur);
@@ -113,11 +81,11 @@ namespace minbool {
             }
         }
 
-        bool operator<(const MinTerm &other) const {
+        bool operator < (const MinTerm& other) const {
             return value < other.value || (value == other.value && dash < other.dash);
         }
 
-        bool operator==(const MinTerm &other) const {
+        bool operator == (const MinTerm& other) const {
             return value == other.value && dash == other.dash;
         }
 
@@ -125,45 +93,45 @@ namespace minbool {
         IntTypeN dash;
     };
 
-    template<size_t Nbits>
-    std::ostream &operator<<(std::ostream &os, const MinTerm<Nbits> &term) {
+    template <size_t Nbits>
+    std::ostream& operator << (std::ostream& os, const MinTerm<Nbits>& term) {
         for (int i = Nbits - 1; i >= 0; --i) {
             auto value = term[i];
             if (value != MinTerm<Nbits>::Dash)
-                os << (uint32_t) value;
+                os << (uint32_t)value;
             else
                 os << '-';
         }
         return os;
     }
 
-    template<size_t Nbits>
+    template <size_t Nbits>
     struct ImplicantTable {
         using MinTermN = MinTerm<Nbits>;
 
-        size_t groups[Nbits + 2]{};
-        std::vector<bool> marks;
+        size_t groups[Nbits + 2];
+        std::vector<bool>     marks;
         std::vector<MinTermN> terms;
 
         size_t size() const { return terms.size(); }
 
-        void fill(const std::vector<MinTermN> &minterms) {
+        void fill(const std::vector<MinTermN>& minterms) {
             std::fill(groups, groups + Nbits + 2, 0);
-            for (auto &term: minterms)
+            for (auto& term : minterms)
                 groups[popcount(term.value)]++;
             std::partial_sum(groups, groups + Nbits + 2, groups);
             terms.resize(minterms.size());
             marks.resize(minterms.size());
-            for (auto &term: minterms)
+            for (auto& term : minterms)
                 terms[--groups[popcount(term.value)]] = term;
         }
 
-        void combine(std::vector<MinTermN> &res) {
+        void combine(std::vector<MinTermN>& res) {
             for (size_t i = 0; i < Nbits; ++i) {
                 for (size_t j = groups[i]; j < groups[i + 1]; ++j) {
                     for (size_t k = groups[i + 1]; k < groups[i + 2]; ++k) {
-                        auto &term_a = terms[j];
-                        auto &term_b = terms[k];
+                        auto& term_a = terms[j];
+                        auto& term_b = terms[k];
                         if ((term_a.value & term_b.value) == term_a.value && (term_a.dash == term_b.dash)) {
                             marks[j] = true;
                             marks[k] = true;
@@ -174,7 +142,7 @@ namespace minbool {
             }
         }
 
-        void primes(std::vector<MinTermN> &res) {
+        void primes(std::vector<MinTermN>& res) {
             for (size_t i = 0; i < terms.size(); ++i) {
                 if (!marks[i])
                     res.push_back(terms[i]);
@@ -182,22 +150,22 @@ namespace minbool {
         }
     };
 
-    template<size_t Nbits>
-    std::ostream &operator<<(std::ostream &os, const ImplicantTable<Nbits> &table) {
-        for (size_t i = 0, j = 0; i < table.terms.size(); ++i) {
-            if (i == table.groups[j + 1]) {
-                ++j;
-                os << "\n";
-                for (size_t k = 0; k < Nbits + 2; ++k)
+    template <size_t Nbits>
+    std::ostream& operator << (std::ostream& os, const ImplicantTable<Nbits>& table) {
+        for (size_t i = 0; i < Nbits; ++i) {
+            if (!table.terms[i].empty()) {
+                for (size_t j = 0; j < table.terms[i].size(); ++j) {
+                    os << table.terms[i][j] << ' ' << (table.marks[i][j] ? 'X' : ' ') << '\n';
+                }
+                for (size_t j = 0; j < Nbits + 2; ++j)
                     os << '-';
                 os << '\n';
             }
-            os << table.terms[i] << ' ' << (table.marks[i] ? 'X' : ' ') << '\n';
         }
         return os;
     }
 
-    template<size_t Nbits>
+    template <size_t Nbits>
     struct PrimeChart {
         using MinTermN = MinTerm<Nbits>;
         using IntTypeN = typename MinTermN::IntTypeN;
@@ -208,24 +176,24 @@ namespace minbool {
             return columns.size();
         }
 
-        void fill(const std::vector<MinTermN> &primes) {
-            for (auto &prime: primes) {
-                prime.foreach_value([&](IntTypeN value) {
+        void fill(const std::vector<MinTermN>& primes) {
+            for (auto& prime : primes) {
+                prime.foreach_value([&] (IntTypeN value) {
                     columns[value].emplace_back(prime);
                 });
             }
-            for (auto &pair: columns)
+            for (auto& pair : columns)
                 std::sort(pair.second.begin(), pair.second.end());
         }
 
-        void remove_columns(const std::vector<IntTypeN> &values) {
-            for (auto value: values)
+        void remove_columns(const std::vector<IntTypeN>& values) {
+            for (auto value : values)
                 columns.erase(value);
         }
 
-        bool remove_essentials(std::vector<MinTermN> &essentials) {
+        bool remove_essentials(std::vector<MinTermN>& essentials) {
             size_t count = essentials.size();
-            for (auto &pair: columns) {
+            for (auto& pair : columns) {
                 if (pair.second.size() == 1)
                     essentials.push_back(pair.second.front());
             }
@@ -235,32 +203,32 @@ namespace minbool {
             std::sort(essentials.begin() + count, essentials.end());
             essentials.erase(std::unique(essentials.begin() + count, essentials.end()), essentials.end());
 
-            std::for_each(essentials.begin() + count, essentials.end(), [&](const MinTermN &term) {
-                term.foreach_value([&](IntTypeN value) {
+            std::for_each(essentials.begin() + count, essentials.end(), [&] (const MinTermN& term) {
+                term.foreach_value([&] (IntTypeN value) {
                     columns.erase(value);
                 });
             });
             return true;
         }
 
-        void remove_heuristic(std::vector<MinTermN> &solution) {
+        void remove_heuristic(std::vector<MinTermN>& solution) {
             assert(size() > 0);
             std::unordered_map<MinTermN, size_t, typename MinTermN::Hash> covers;
-            for (auto &pair: columns) {
-                for (auto &term: pair.second)
+            for (auto& pair : columns) {
+                for (auto& term : pair.second)
                     covers[term]++;
             }
             // Heuristic: Remove the term that covers the most columns
             size_t max_covers = 0;
             MinTermN term;
-            for (auto &pair: covers) {
+            for (auto& pair : covers) {
                 if (pair.second > max_covers) {
                     max_covers = pair.second;
                     term = pair.first;
                 }
             }
             solution.emplace_back(term);
-            term.foreach_value([&](IntTypeN value) {
+            term.foreach_value([&] (IntTypeN value) {
                 columns.erase(value);
             });
         }
@@ -268,8 +236,8 @@ namespace minbool {
         bool simplify() {
             bool change = false;
 
-            for (auto &pair1: columns) {
-                for (auto &pair2: columns) {
+            for (auto& pair1 : columns) {
+                for (auto& pair2 : columns) {
                     if (pair1.first == pair2.first)
                         continue;
                     // Dominating columns are eliminated
@@ -284,16 +252,16 @@ namespace minbool {
 
             // Transpose columns => rows
             std::unordered_map<MinTermN, std::vector<IntTypeN>, typename MinTermN::Hash> rows;
-            for (auto &pair: columns) {
-                for (auto &term: pair.second)
+            for (auto& pair : columns) {
+                for (auto& term : pair.second)
                     rows[term].emplace_back(pair.first);
                 pair.second.clear();
             }
-            for (auto &pair: rows)
+            for (auto& pair : rows)
                 std::sort(pair.second.begin(), pair.second.end());
 
-            for (auto &pair1: rows) {
-                for (auto &pair2: rows) {
+            for (auto& pair1 : rows) {
+                for (auto& pair2 : rows) {
                     if (pair1.first == pair2.first)
                         continue;
                     // Dominated rows are eliminated
@@ -307,19 +275,19 @@ namespace minbool {
             }
 
             // Transpose rows => columns
-            for (auto &pair: rows) {
-                for (auto &value: pair.second)
+            for (auto& pair : rows) {
+                for (auto& value : pair.second)
                     columns[value].emplace_back(pair.first);
             }
-            for (auto &pair: columns)
+            for (auto& pair : columns)
                 std::sort(pair.second.begin(), pair.second.end());
 
             return change;
         }
     };
 
-    template<size_t Nbits>
-    std::vector<MinTerm<Nbits>> prime_implicants(std::vector<MinTerm<Nbits>> &terms) {
+    template <size_t Nbits>
+    std::vector<MinTerm<Nbits>> prime_implicants(std::vector<MinTerm<Nbits>>& terms) {
         std::vector<MinTerm<Nbits>> primes;
         while (!terms.empty()) {
             ImplicantTable<Nbits> table;
@@ -330,15 +298,13 @@ namespace minbool {
             std::sort(terms.begin(), terms.end());
             terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
             table.primes(primes);
-            std::cout << "Prime Implicants Table:" << std::endl;
-            std::cout << table << std::endl;
         }
         return primes;
     }
 
-    template<size_t Nbits>
-    bool eval_boolean(const std::vector<MinTerm<Nbits>> &solution, typename MinTerm<Nbits>::IntTypeN v) {
-        for (auto &term: solution) {
+    template <size_t Nbits>
+    bool eval_boolean(const std::vector<MinTerm<Nbits>>& solution, typename MinTerm<Nbits>::IntTypeN v) {
+        for (auto& term : solution) {
             bool prod = true;
             for (size_t i = 0; i < Nbits; ++i) {
                 bool bit = ((v >> i) & 1) ? true : false;
@@ -352,15 +318,15 @@ namespace minbool {
         return false;
     }
 
-    template<size_t Nbits>
-    bool check_solution(const std::vector<MinTerm<Nbits>> &solution,
-                        const std::vector<typename MinTerm<Nbits>::IntTypeN> &on_values,
-                        const std::vector<typename MinTerm<Nbits>::IntTypeN> &dc_values) {
+    template <size_t Nbits>
+    bool check_solution(const std::vector<MinTerm<Nbits>>& solution,
+                        const std::vector<typename MinTerm<Nbits>::IntTypeN>& on_values,
+                        const std::vector<typename MinTerm<Nbits>::IntTypeN>& dc_values) {
         using IntTypeN = typename MinTerm<Nbits>::IntTypeN;
         std::unordered_set<IntTypeN> not_off;
-        for (auto v: on_values) not_off.emplace(v);
-        for (auto v: dc_values) not_off.emplace(v);
-        for (auto v: on_values) {
+        for (auto v : on_values) not_off.emplace(v);
+        for (auto v : dc_values) not_off.emplace(v);
+        for (auto v : on_values) {
             if (!eval_boolean(solution, v))
                 return false;
         }
@@ -371,18 +337,19 @@ namespace minbool {
         return not_off.count(0) != 0 || !eval_boolean(solution, 0);
     }
 
-    template<size_t Nbits>
+    template <size_t Nbits>
     std::vector<MinTerm<Nbits>> minimize_boolean(
-            const std::vector<typename MinTerm<Nbits>::IntTypeN> &on_values,
-            const std::vector<typename MinTerm<Nbits>::IntTypeN> &dc_values) {
+            const std::vector<typename MinTerm<Nbits>::IntTypeN>& on_values,
+            const std::vector<typename MinTerm<Nbits>::IntTypeN>& dc_values)
+    {
         if (on_values.empty())
             return {};
 
         std::vector<MinTerm<Nbits>> init;
         init.reserve(on_values.size() + dc_values.size());
-        for (auto on: on_values)
+        for (auto on : on_values)
             init.emplace_back(on);
-        for (auto dc: dc_values)
+        for (auto dc : dc_values)
             init.emplace_back(dc);
         auto primes = prime_implicants(init);
 
@@ -400,47 +367,6 @@ namespace minbool {
 
         assert(check_solution(solution, on_values, dc_values));
         return solution;
-    }
-
-    // Converts the output of minimize_boolean (std::vector<MinTerm<Nbits>> solution) to a vector of string terms representing each group
-    template<size_t Nbits>
-    std::vector<std::string> get_minimized_func_terms(
-            const std::vector<typename MinTerm<Nbits>::IntTypeN> &on_values,
-            const std::vector<typename MinTerm<Nbits>::IntTypeN> &dc_values) {
-
-        auto solution = minimize_boolean<Nbits>(on_values, dc_values);
-
-        // Print the solution
-        for (const auto& term : solution) {
-            std::cout << term << std::endl;
-        }
-
-        size_t msb = 3;
-
-        std::vector<std::string> terms;
-//        for (auto &term: solution) {
-//            std::string term_str = "";
-//            for (size_t i = 0, j = 3; i < Nbits - 4; ++i) {
-//                // Access the i-th bit of the MinTerm
-//                auto bit = term[i];
-//                if (term[i] == MinTerm<Nbits>::One) {
-//
-//                    // add the term to the front of term_str
-//                    term_str = (char) ('A' + j) + term_str;
-//
-//                } else if (term[i] == MinTerm<Nbits>::Zero) {
-//                    term_str = '\'' + term_str;
-//                    term_str = (char) ('A' + j) + term_str;
-//                }
-//                --j;
-//            }
-//            std::cout << std::endl;
-//            terms.push_back(term_str);
-//        }
-        for (auto &term: solution) {
-            terms.push_back(term.to_string());
-        }
-        return terms;
     }
 
 } // namespace minbool

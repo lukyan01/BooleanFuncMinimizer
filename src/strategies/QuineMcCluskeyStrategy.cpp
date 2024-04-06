@@ -3,9 +3,10 @@
 //
 
 #include "QuineMcCluskeyStrategy.h"
+#include <iostream>
+#include <sstream>
 
-
-void QuineMcCluskeyStrategy::minimize(const std::vector<int>& minterms_on, const std::vector<int>& minterms_dc, int mintermLength) {
+std::vector<std::string> QuineMcCluskeyStrategy::minimize(const std::vector<int>& minterms_on, const std::vector<int>& minterms_dc, int mintermLength) {
 
     auto Nbits = static_cast<size_t>(mintermLength);
 
@@ -13,24 +14,20 @@ void QuineMcCluskeyStrategy::minimize(const std::vector<int>& minterms_on, const
     switch (Nbits) {
         case 4:
         case 8:
-            minimize_template<uint8_t>(minterms_on, minterms_dc);
-            break;
+            return minimize_template<uint8_t>(minterms_on, minterms_dc);
         case 16:
-            minimize_template<uint16_t>(minterms_on, minterms_dc);
-            break;
+            return minimize_template<uint16_t>(minterms_on, minterms_dc);
         case 32:
-            minimize_template<uint32_t>(minterms_on, minterms_dc);
-            break;
+            return minimize_template<uint32_t>(minterms_on, minterms_dc);
         case 64:
-            minimize_template<uint64_t>(minterms_on, minterms_dc);
-            break;
+            return minimize_template<uint64_t>(minterms_on, minterms_dc);
         default:
             throw std::runtime_error("Unsupported minterm length");
     }
 }
 
 template <typename IntTypeN>
-void QuineMcCluskeyStrategy::minimize_template(const std::vector<int>& minterms_on, const std::vector<int>& minterms_dc) {
+std::vector<std::string> QuineMcCluskeyStrategy::minimize_template(const std::vector<int>& minterms_on, const std::vector<int>& minterms_dc) {
 
     using namespace minbool;
 
@@ -49,11 +46,16 @@ void QuineMcCluskeyStrategy::minimize_template(const std::vector<int>& minterms_
     }
 
     // Get the solution
-    auto solution = get_minimized_func_terms<sizeof(IntTypeN) * 8>(minterms_on_uint, minterms_dc_uint);
+    auto solution = minimize_boolean<sizeof(IntTypeN) * 8>(minterms_on_uint, minterms_dc_uint);
 
-
-    // Print the solution
-    for (const auto& term : solution) {
-        std::cout << term << std::endl;
+    // Convert the solution to a vector of strings
+    std::vector<std::string> minimized_function;
+    minimized_function.reserve(solution.size());
+    for (auto& term : solution) {
+        std::stringstream ss;
+        ss << term;
+        minimized_function.emplace_back(ss.str());
     }
+
+    return minimized_function;
 }

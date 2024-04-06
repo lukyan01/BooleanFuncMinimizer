@@ -13,10 +13,10 @@
 class QuineMcCluskeyStrategy : public MinimizationStrategy {
 public:
     // Overrides the minimize function in the MinimizationStrategy interface
-    void minimize(const std::vector<int>& on, const std::vector<int>& dc, int minLength) override;
+    std::vector<std::string> minimize(const std::vector<int>& on, const std::vector<int>& dc, int minLength) override;
 private:
     template <typename IntTypeN>
-    void minimize_template(const std::vector<int>& minterms_on, const std::vector<int>& minterms_dc);
+    std::vector<std::string> minimize_template(const std::vector<int>& minterms_on, const std::vector<int>& minterms_dc);
 };
 
 
