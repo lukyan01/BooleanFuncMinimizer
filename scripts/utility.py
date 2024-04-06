@@ -22,6 +22,11 @@ def int_to_bin(num: int):
     return result
 
 def generate_latex_table(ssd_num: int):
+    '''
+    Generate the latex table for a given SSD
+    :param ssd_num: The display to generate the table for
+    :return: None
+    '''
     display = parse_display_sequence()[ssd_num]
 
     print(f"SSD{ssd_num} Table: \n")
@@ -29,6 +34,11 @@ def generate_latex_table(ssd_num: int):
         print(f"\t{i}{int_to_bin(i)}{format_hex(display[i])} \\\\ \\hline")
 
 def generate_latex_equations(segment_eqns: list[str]):
+    '''
+    Generate the latex equations for a given SSD
+    :param segment_eqns: A list of strings that hold the minimized equations for each segment
+    :return: The latex equations
+    '''
 
     replacements = {
         "D'": "\\overline{Q_0}",
@@ -49,6 +59,15 @@ def generate_latex_equations(segment_eqns: list[str]):
 
 
 def run_minimizer(executable, minterms, dontcares, output_file, cwd):
+    '''
+    Run the minimizer with the given parameters
+    :param executable: The path to the minimizer executable
+    :param minterms: The minterms to minimize
+    :param dontcares: The dontcares to minimize
+    :param output_file: The output file to write the minimized function to
+    :param cwd: Current working directory
+    :return: None
+    '''
     # Combine the executable path, minterms, dontcares, and output file name into a command list
     command = [executable, minterms, dontcares, output_file]
 
@@ -56,13 +75,6 @@ def run_minimizer(executable, minterms, dontcares, output_file, cwd):
 
     # Run the subprocess and capture the output
     result = subprocess.run(command, capture_output=True, text=True, cwd=cwd)
-
-    # # Print the output
-    # print("Output:", result.stdout)
-    #
-    # # Print any errors
-    # if result.stderr:
-    #     print("Errors:", result.stderr)
 
 
 def parse_minimizer_output(output_file_name) -> list[str]:
@@ -75,6 +87,12 @@ def parse_minimizer_output(output_file_name) -> list[str]:
 
 
 def get_boolean_function(prime_implicants: list[str]) -> str:
+
+    '''
+    Convert the prime implicants to a boolean function
+    :param prime_implicants: The prime implicants to convert
+    :return: The boolean function in terms of A, B, C, and D
+    '''
     prime_implicants = [implicant[4:] for implicant in prime_implicants]
 
     # Since now we have a 4 bit input, most significant bit is A, and least significant bit is D
@@ -93,6 +111,10 @@ def get_boolean_function(prime_implicants: list[str]) -> str:
 
 
 def parse_display_sequence() -> list[list[str]]:
+    '''
+    Parse the display sequence from the display_sequence.txt file
+    :return: The display sequence as a list of lists of strings that hold binary values for each segment
+    '''
     display = [[], [], [], [], [], []]
     with open("display_sequence.txt", "r") as file:
         for i, line in enumerate(file.readlines()):
@@ -114,6 +136,11 @@ def parse_display_sequence() -> list[list[str]]:
 
 
 def get_minterms_for_display(ssd_num: int) -> list[list[int]]:
+    '''
+    Get the minterms for a given SSD display
+    :param ssd_num: The SSD display to get the minterms for
+    :return: A list of lists of minterms for each segment
+    '''
     minterm_arr = [[], [], [], [], [], [], []]
     display_sequence = parse_display_sequence()
 
@@ -125,6 +152,11 @@ def get_minterms_for_display(ssd_num: int) -> list[list[int]]:
     return minterm_arr
 
 def launch_minimize_display(ssd_num: int) -> list[str]:
+    '''
+    Launch the minimizer for the given SSD
+    :param ssd_num: The SSD display to minimize
+    :return: A list of minimized equations for each segment
+    '''
     segment_minterms = get_minterms_for_display(ssd_num)
     print(f"SSD{ssd_num} Minterms: {segment_minterms}")
 
@@ -142,7 +174,12 @@ def launch_minimize_display(ssd_num: int) -> list[str]:
     return segment_eqns
 
 def convert_to_verilog_sop(eqn: str, map_to_nand: bool = False) -> str:
-
+    '''
+    Convert the minimized equation to a verilog SOP
+    :param eqn: The minimized equation
+    :param map_to_nand: Whether to map the equation to NAND gates
+    :return: The verilog SOP/NAND equation
+    '''
     eqn = eqn.replace("'", "n")
     terms = []
     for term in eqn.split(" + "):
